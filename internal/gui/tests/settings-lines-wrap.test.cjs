@@ -16,7 +16,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { test } = require("node:test");
 const { chromium, webkit } = require("playwright");
-const { watchSettingsReads, settingsDrawn, openPart } = require("./reader.cjs");
+const { watchSettingsReads, settingsDrawn, openPart, reach } = require("./reader.cjs");
 
 const assets = path.resolve(process.env.MAGPIE_WRAP_ASSETS || path.join(__dirname, "../assets"));
 
@@ -122,7 +122,13 @@ for (const engine of engines) {
         if (await s.evaluate((e) => getComputedStyle(e).getPropertyValue("--hint").trim() === "1")) {
           // out of sight at rest: the row's card shows it whole
           await s.evaluate((e) => e.closest(".row.pref").scrollIntoView({ block: "center" }));
-          await s.locator("xpath=ancestor::div[contains(concat(' ', @class, ' '), ' pref ')][1]").locator(":scope > .who > .name").hover();
+          // the name brought clear into sight with real wheel input first: a
+          // name left below the fold takes Playwright's hover a scroll to
+          // reach, and any scroll the app didn't make is put back, which
+          // takes the card away (settingshints.js hides it on any scroll)
+          const nameEl = s.locator("xpath=ancestor::div[contains(concat(' ', @class, ' '), ' pref ')][1]").locator(":scope > .who > .name");
+          await reach(page, nameEl);
+          await nameEl.hover();
           const card = page.locator(".set-hint.on");
           await card.waitFor();
           assert.ok((await card.textContent()).includes((await s.textContent()).trim()), `${sel} isn't in its card`);

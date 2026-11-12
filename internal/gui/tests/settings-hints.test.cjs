@@ -18,7 +18,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { test } = require("node:test");
 const { chromium, webkit } = require("playwright");
-const { watchSettingsReads, settingsDrawn, openPart } = require("./reader.cjs");
+const { watchSettingsReads, settingsDrawn, openPart, reach } = require("./reader.cjs");
 
 const assets = path.resolve(__dirname, "../assets");
 
@@ -110,10 +110,16 @@ for (const engine of engines) {
 
         // the pointer resting on the row: a card with the whole line, and
         // nothing moves
-        await mcp.evaluate((e) => e.scrollIntoView({ block: "center" }));
+        // the name brought clear into sight with real wheel input first: a
+        // name left below the fold takes Playwright's hover a scroll to
+        // reach, and any scroll the app didn't make is put back, which takes
+        // the card away (settingshints.js hides it on any scroll). The rows
+        // are read after the wheel, so the wheel's own move isn't counted
+        const nameEl = mcp.locator(":scope > .who > .name");
+        await reach(page, nameEl);
         await page.mouse.move(1, 1);
         const before = await page.evaluate(boxes);
-        await mcp.locator(":scope > .who > .name").hover();
+        await nameEl.hover();
         const card = page.locator(".set-hint.on");
         await card.waitFor();
         assert.equal((await card.textContent()).includes(text), true, "the card doesn't say the row's line");

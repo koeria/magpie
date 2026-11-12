@@ -21705,7 +21705,7 @@ function sideEffortChip(val, levels, saved, now, cls, dflt, save) {
   if (!levels?.length) return;
   const b = el("button", "rt-cond on side-effort " + cls);
   b.type = "button";
-  b.setAttribute("aria-haspopup", "menu");
+  menuOf(b);
   const shown = saved ? now || saved : "";
   b.setAttribute("aria-label", t("Thinking") + ": " + (shown ? t(shown) : t("Default")));
   b.title = t("How hard this model thinks");

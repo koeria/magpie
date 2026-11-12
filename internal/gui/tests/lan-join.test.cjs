@@ -182,10 +182,17 @@ for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium",
         await reach(page, field);
         // too short: the gateway's word, in the page's language
         await field.fill("short");
-        await row.locator("button", { hasText: w["Set"] }).click();
+        // reach before each press: at 390px the Set button can rest under the
+        // view's scroll-to-ends buttons, which take the click
+        const pressSet = async () => {
+          const set = row.locator("button", { hasText: w["Set"] });
+          await reach(page, set);
+          await set.click();
+        };
+        await pressSet();
         await page.waitForFunction((m) => document.querySelector("#lanList .join-row .sub.err")?.textContent === m, w["Use a password of at least 8 characters"]);
         await page.locator("#lanList .join-row input.join-pw").fill(PW);
-        await page.locator("#lanList .join-row button", { hasText: w["Set"] }).click();
+        await pressSet();
         const link = page.locator("#lanList .join-link-row code");
         await link.waitFor();
         assert.equal(await link.textContent(), BASE + "/join");
@@ -198,7 +205,9 @@ for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium",
             .concat(document.documentElement.scrollWidth > innerWidth ? ["page scrolls sideways"] : []);
         });
         assert.deepEqual(bad, []);
-        await page.locator("#lanList .join-row button.join-off").click();
+        const off = page.locator("#lanList .join-row button.join-off");
+        await reach(page, off);
+        await off.click();
         await page.waitForFunction(() => !document.querySelector("#lanList .join-link-row"));
         assert.deepEqual(posts.at(-1), { password: "" });
         assert.deepEqual(errors, []);
